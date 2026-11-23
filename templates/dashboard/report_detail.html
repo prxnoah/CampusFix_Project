@@ -1,0 +1,68 @@
+{% extends "base.html" %}{% block title %}{{ report['report_code'] }} | CampusFix{% if current_user['role'] in ['maintenance','supervisor','admin'] %}<script id="operationsWorkflowScript">
+document.addEventListener('DOMContentLoaded',()=>{
+ const input=document.getElementById('operationStatus');
+ const stages=[...document.querySelectorAll('.workflow-stage:not(:disabled)')];
+ if(!input)return;
+ stages.forEach(btn=>btn.addEventListener('click',()=>{
+   input.value=btn.dataset.status;
+   stages.forEach(x=>x.classList.remove('selected-next'));
+   if(btn.dataset.status!==input.dataset.current) btn.classList.add('selected-next');
+ }));
+});
+</script>{% endif %}{% endblock %}
+{% block content %}<section class="dashboard-head"><div class="container"><a class="back-link" href="{{ url_for('dashboard') if current_user['role'] in ['student','faculty','staff'] else url_for('operations') }}">← Back to portal</a><div class="report-title"><div><span class="eyebrow">{{ report['report_code'] }}</span><h1>{{ report['category'] }} at {{ report['building'] }}</h1><p>Submitted {{ report['created_at'][:16] }} by {{ report['reporter'] }}</p></div><span class="priority {{ report['priority']|lower }}">{{ report['priority'] }} priority</span></div></div></section>
+<section class="section compact"><div class="container detail-grid"><div>
+{% if current_user['role'] in ['maintenance','supervisor','admin'] and report['status']=='Reported' %}
+<div class="detail-card" style="margin-bottom:1rem;border-left:4px solid #8f1023;">
+<span class="eyebrow">ACTION REQUIRED</span>
+<h2>New report awaiting review</h2>
+<p>Review the submitted category, location, severity, description, additional details and photo evidence before moving this report to <strong>Under Review</strong>.</p>
+</div>
+{% endif %}
+<div class="detail-card {% if current_user['role'] in ['student','faculty','staff'] %}reporter-status-card{% endif %}"><div class="detail-head"><div><span class="eyebrow">CURRENT STATUS</span><h2>{{ report['status'] }}</h2></div><span class="status-pill">{{ report['status'] }}</span></div><div class="timeline">{% for t in timeline %}<div class="timeline-item {% if loop.last %}current{% endif %}"><div class="timeline-dot"></div><div><b>{{ t['new_status'] }}</b><p>{{ t['note'] or 'Status updated.' }}</p><small>{{ t['created_at'][:16] }} · {{ t['full_name'] or 'CampusFix System' }}</small></div></div>{% endfor %}</div></div>
+<div class="detail-card"><span class="eyebrow">SMART REPORT CHECK</span>
+{% if report['duplicate_count'] %}
+<div class="location-example"><div class="bad"><span>!</span><div><b>Possible duplicate</b><small>{{ report['duplicate_count'] }} similar active report(s) were found for this category and location.</small></div></div></div>
+{% else %}
+<div class="quality-item"><span>✓</span><div><b>No active duplicate match found</b><small>CampusFix did not find another active report with the same category and location.</small></div></div>
+{% endif %}
+</div>
+<div class="detail-card"><span class="eyebrow">REPORT DETAILS</span><div class="detail-facts"><div><small>Category</small><b>{{ report['category'] }}</b></div><div><small>Severity</small><b>{{ report['severity'] }}</b></div><div><small>Building</small><b>{{ report['building'] }}</b></div><div><small>Room / Area</small><b>{{ report['room_area'] or 'Not specified' }}</b></div><div><small>Assigned personnel</small><b>{{ report['assignee'] or 'Awaiting assignment' }}</b></div><div><small>Date noticed</small><b>{{ report['date_noticed'] or 'Not specified' }}</b></div><div><small>Potential duplicates</small><b>{{ report['duplicate_count'] }}</b></div></div><hr><p class="report-description">{{ report['description'] }}</p>{% if report['additional_details'] %}<div class="additional-detail-box"><span class="eyebrow">ADDITIONAL DETAILS</span><p>{{ report['additional_details'] }}</p></div>{% endif %}{% if report['photo_path'] %}<div class="evidence-box"><span class="eyebrow">PHOTO EVIDENCE</span><img src="{{ url_for('static', filename=report['photo_path']) }}" alt="Photo evidence for {{ report['report_code'] }}"></div>{% endif %}</div></div>
+{% if report['status']=='Resolved' and (report['resolution_note'] or report['resolution_photo_path']) %}
+<div class="detail-card resolution-outcome-card">
+  <div class="detail-head"><div><span class="eyebrow">RESOLUTION OUTCOME</span><h2>Maintenance completed</h2></div><span class="status-pill">Resolved</span></div>
+  {% if report['resolution_note'] %}<p class="report-description">{{ report['resolution_note'] }}</p>{% endif %}
+  {% if report['resolution_photo_path'] %}<div class="evidence-box"><span class="eyebrow">COMPLETION PHOTO</span><img src="{{ url_for('static', filename=report['resolution_photo_path']) }}" alt="Completion evidence for {{ report['report_code'] }}"></div>{% endif %}
+  {% if report['resolved_at'] %}<small>Resolved {{ report['resolved_at'][:16] }}</small>{% endif %}
+</div>
+{% endif %}
+{% if current_user['role'] in ['maintenance','supervisor','admin'] %}<aside class="side-card operations-panel"><div class="ops-panel-head"><div class="ops-kicker"><span class="ops-icon" aria-hidden="true">✓</span><div><span class="eyebrow">OPERATIONS</span><strong>Report workflow</strong></div></div><span class="ops-role">{{ role_labels[current_user['role']] }}</span></div><div class="ops-review-heading"><div class="ops-review-icon" aria-hidden="true">{% if report["status"]=="Reported" %}↗{% elif report["status"]=="Under Review" %}⌕{% elif report["status"]=="In Progress" %}⚙{% else %}✓{% endif %}</div><div><span class="ops-review-label">{% if report["status"]=="Reported" %}ACTION REQUIRED{% elif report["status"]=="Under Review" %}NEXT ACTION{% elif report["status"]=="In Progress" %}NEXT ACTION{% else %}WORKFLOW COMPLETE{% endif %}</span><h3>{% if report["status"]=="Reported" %}Review this report{% elif report["status"]=="Under Review" %}Move to maintenance{% elif report["status"]=="In Progress" %}Complete maintenance{% else %}Report management{% endif %}</h3><p class="ops-intro">{% if report["status"]=="Reported" %}Check the submitted details before accepting this report for review.{% elif report["status"]=="Under Review" %}Confirm the assigned personnel and move the issue into maintenance.{% elif report["status"]=="In Progress" %}Record the work update and mark the issue resolved when finished.{% else %}This report has reached the final workflow stage.{% endif %}</p></div></div><div class="workflow-visual" aria-label="Report workflow">{% set workflow = ['Reported','Under Review','In Progress','Resolved'] %}{% for s in workflow %}<button type="button" class="workflow-stage {% if s==report['status'] %}active{% elif workflow.index(s) < workflow.index(report['status']) %}done{% else %}locked{% endif %}" data-status="{{ s }}" {% if workflow.index(s) > workflow.index(report['status']) + 1 or workflow.index(s) < workflow.index(report['status']) %}disabled{% endif %}><span class="stage-number">{{ loop.index }}</span><span class="stage-copy"><b>{% if s=='Under Review' %}Under<br>Review{% elif s=='In Progress' %}In<br>Progress{% else %}{{ s }}{% endif %}</b><small>{% if s==report['status'] %}Current{% elif workflow.index(s) < workflow.index(report['status']) %}Done{% elif workflow.index(s)==workflow.index(report['status'])+1 %}Next{% else %}Locked{% endif %}</small></span></button>{% if not loop.last %}<span class="workflow-arrow" aria-hidden="true">→</span>{% endif %}{% endfor %}</div><form method="post" action="{{ url_for('update_report',report_id=report['id']) }}" enctype="multipart/form-data"><input type="hidden" name="status" id="operationStatus" value="{{ report['status'] }}">
+<div class="ops-form-section">
+  <div class="ops-form-section-head"><span class="ops-form-icon">👤</span><div><b>Assignment</b><small>Choose who will handle this campus issue.</small></div></div>
+  <div class="ops-assignee-card"><div class="ops-assignee-avatar">{% if report['assignee'] %}{{ report['assignee'][0]|upper }}{% else %}—{% endif %}</div><div class="ops-assignee-copy"><span>Assigned personnel</span><strong>{% if report['assignee'] %}{{ report['assignee'] }}{% else %}No personnel assigned{% endif %}</strong><small>{% if report['assignee'] %}Responsible for the next maintenance action{% else %}Select a maintenance personnel below{% endif %}</small></div><div class="ops-assignee-state {% if report['assignee'] %}assigned{% endif %}">{% if report['assignee'] %}Assigned{% else %}Pending{% endif %}</div></div>
+  <label class="ops-field-label" for="assignedPersonnel">Select personnel</label><select id="assignedPersonnel" name="assigned_to" class="ops-select"><option value="">Unassigned</option>{% for s in staff %}<option value="{{ s['id'] }}" {% if report['assigned_to']==s['id'] %}selected{% endif %}>{{ s['full_name'] }}</option>{% endfor %}</select>
+</div>
+<div class="ops-form-section">
+  <div class="ops-form-section-head"><span class="ops-form-icon note">✎</span><div><b>Work note</b><small>Add an internal update for the maintenance team.</small></div></div>
+  <div class="ops-note-box"><textarea name="note" rows="4" placeholder="e.g., Checked the room and confirmed the issue. Parts are needed before repair can begin."></textarea><div class="ops-note-footer"><span>Internal note · visible to operations</span><span>Optional</span></div></div>
+</div>
+<div class="resolution-section">
+  <div class="ops-form-section-head"><span class="ops-form-icon">✓</span><div><b>Resolution proof</b><small>Required when marking a report Resolved. Record what was fixed or attach a completion photo.</small></div></div>
+  <label class="ops-field-label" for="resolutionNote">Action taken</label>
+  <textarea id="resolutionNote" name="resolution_note" rows="3" class="ops-textarea" placeholder="Example: Replaced the damaged outlet and tested the power connection."></textarea>
+  <label class="ops-field-label" for="resolutionPhoto">Resolution photo <span class="optional">Optional if a detailed note is provided</span></label>
+  <input id="resolutionPhoto" name="resolution_photo" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="ops-file">
+  {% if report['resolution_note'] or report['resolution_photo_path'] %}<div class="resolution-record"><span class="eyebrow">RECORDED RESOLUTION</span>{% if report['resolution_note'] %}<p>{{ report['resolution_note'] }}</p>{% endif %}{% if report['resolution_photo_path'] %}<img src="{{ url_for('static', filename=report['resolution_photo_path']) }}" alt="Resolution evidence">{% endif %}</div>{% endif %}
+</div>
+<div class="ops-next"><span><i>→</i> Next valid stage</span><b>{% if report['status']=='Reported' %}Under Review{% elif report['status']=='Under Review' %}In Progress{% elif report['status']=='In Progress' %}Resolved{% else %}No further stage{% endif %}</b></div><button class="btn full ops-submit" type="submit"><span>{% if report['status']=='Reported' %}Start Review{% elif report['status']=='Under Review' %}Start Maintenance{% elif report['status']=='In Progress' %}Mark Resolved{% else %}Save Update{% endif %}</span><span aria-hidden="true">→</span></button></form></aside>{% endif %}</div></section>{% if current_user['role'] in ['maintenance','supervisor','admin'] %}<script id="operationsWorkflowScript">
+document.addEventListener('DOMContentLoaded',()=>{
+ const input=document.getElementById('operationStatus');
+ const stages=[...document.querySelectorAll('.workflow-stage:not(:disabled)')];
+ if(!input)return;
+ stages.forEach(btn=>btn.addEventListener('click',()=>{
+   input.value=btn.dataset.status;
+   stages.forEach(x=>x.classList.remove('selected-next'));
+   if(btn.dataset.status!==input.dataset.current) btn.classList.add('selected-next');
+ }));
+});
+</script>{% endif %}{% endblock %}

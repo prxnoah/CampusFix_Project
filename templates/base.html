@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}LPU Manila | CampusFix{% endblock %}</title>
+<meta name="description" content="Lyceum of the Philippines University – Manila university portal and CampusFix maintenance management system">
+<meta name="theme-color" content="#8f1023">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/lpu.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/lpu-upgrades.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/lpu-v3.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="lpu-body">
+<div class="scroll-progress" id="scrollProgress"></div>
+<div id="page-loader"><div class="loader-emblem"><span>LPU</span></div><div class="loader-line"><i></i></div><span>Lyceum of the Philippines University – Manila</span><small>Preparing your campus experience</small></div>
+<div class="topbar lpu-topbar"><div class="container topbar-inner"><span><strong>LYCEUM OF THE PHILIPPINES UNIVERSITY – MANILA</strong></span><span>AY 2026–2027 <b class="gold-dot">•</b> Muralla cor. Real Sts., Intramuros, Manila</span></div></div>
+<header class="site-header lpu-header" id="siteHeader">
+<div class="container nav-wrap">
+<a href="{{ url_for('home') }}" class="lpu-brand" aria-label="LPU Manila home">
+  <div class="lpu-logo-wrap"><img class="lpu-logo-img" src="{{ url_for('static', filename='images/lpu-crest-transparent.png') }}" alt="Lyceum of the Philippines University Manila logo"></div>
+  <div class="lpu-brand-text"><strong>LYCEUM OF THE PHILIPPINES</strong><span>UNIVERSITY – MANILA</span><small>A Jose P. Laurel Legacy</small></div>
+</a>
+<button class="nav-toggle" aria-label="Open menu">☰</button>
+<nav class="main-nav lpu-nav">
+<a href="{{ url_for('home') }}">Home</a>
+<a href="{{ url_for('campus_status') }}">Campus Status</a>
+<a href="{{ url_for('campus_map') }}">Campus Map</a>
+<a class="nav-report" href="{{ url_for('new_report') }}">Report Issue</a>
+</nav>
+<div class="nav-actions">
+<button class="icon-btn" id="themeToggle" title="Toggle dark mode">◐</button>
+{% if current_user %}
+<a class="notification-link" href="{{ url_for('notifications') }}">🔔{% if unread_notifications %}<b>{{ unread_notifications }}</b>{% endif %}</a>
+{% if current_user['role'] in ['maintenance','supervisor'] %}<a class="btn btn-sm btn-outline" href="{{ url_for('operations') }}">Operations</a>
+{% elif current_user['role']=='admin' %}<a class="btn btn-sm btn-outline" href="{{ url_for('admin_dashboard') }}">Admin</a>
+{% else %}<a class="btn btn-sm btn-outline" href="{{ url_for('dashboard') }}">My Reports</a>{% endif %}
+<a class="avatar" href="{{ url_for('profile') }}">{{ current_user['full_name'][0] }}</a>
+{% else %}<a href="{{ url_for('login') }}" class="btn btn-sm btn-outline">Sign In</a><a href="{{ url_for('register') }}" class="btn btn-sm">Create Account</a>{% endif %}
+</div></div>
+</header>
+<div class="quick-links"><div class="container quick-links-inner"><span>Quick Links</span><a href="{{ url_for('admissions') }}">Apply Now</a><a href="{{ url_for('resources') }}">Student Handbook</a><a href="{{ url_for('help_page') }}">Help & Support</a><a href="{{ url_for('new_report') }}" class="quick-report">CampusFix <b>Report an Issue</b></a></div></div>
+<div class="flash-stack">{% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="toast {{ category }}">{{ message }}<button onclick="this.parentElement.remove()">×</button></div>{% endfor %}{% endwith %}</div>
+<main>{% block content %}{% endblock %}</main>
+<footer class="footer lpu-footer"><div class="container footer-grid">
+<div><div class="lpu-footer-brand"><div class="lpu-logo-wrap footer-logo"><img class="lpu-logo-img" src="{{ url_for('static', filename='images/lpu-crest-transparent.png') }}" alt="Lyceum of the Philippines University Manila logo"></div><div><strong>LYCEUM OF THE PHILIPPINES UNIVERSITY</strong><span>MANILA CAMPUS</span></div></div><p>Learn Different. Live Different. A university community shaped by knowledge, leadership, service and purpose.</p><div class="footer-motto">PRO DEO ET PATRIA</div></div>
+<div><h4>University</h4><p class="footer-info">LPU Manila is a private, non-sectarian university founded in 1952 by Dr. José P. Laurel.</p><p class="footer-info"><strong>Values:</strong> Veritas et Fortitudo • Pro Deo et Patria</p><a href="{{ url_for('about') }}">University Profile →</a></div>
+<div><h4>LPU Manila</h4><p class="footer-info"><strong>Campus:</strong> Muralla cor. Real Sts., Intramuros, Manila 1002</p><p class="footer-info"><strong>CampusFix:</strong> Report facility, classroom, safety and maintenance concerns online.</p><a href="{{ url_for('campus_map') }}">Explore campus map →</a></div>
+<div><h4>Services</h4><a href="{{ url_for('admissions') }}">Admissions</a><a href="{{ url_for('resources') }}">Resources</a><a href="{{ url_for('faq') }}">FAQ</a><a href="{{ url_for('help_page') }}">Help & Support</a></div>
+</div><div class="container footer-bottom"><span>© 2026 Lyceum of the Philippines University – Manila</span><span>Privacy • Accessibility • Terms</span></div></footer>
+{% if config.get('AI_ENABLED') %}
+<button class="ai-fab" id="aiFab" aria-label="Open CampusFix AI Assistant"><span class="ai-pulse"></span><b>AI</b><small>Ask CampusFix</small></button>
+<div class="ai-chat" id="aiChat" aria-hidden="true">
+  <div class="ai-chat-head"><div><span class="ai-kicker">CAMPUSFIX AI</span><strong>Campus Assistant</strong><small>Ask a question about reporting, campus issues, or using CampusFix.</small></div><button id="aiClose" aria-label="Close AI assistant">×</button></div>
+  <div class="ai-chat-body" id="aiMessages"><div class="ai-msg bot"><b>Hi! I’m CampusFix AI.</b><span>Ask me anything about campus maintenance reporting, how to describe an issue, severity, categories, locations, or how to use this portal.</span></div></div>
+  <div class="ai-quick"><button data-ai="What information should I include in a maintenance report?">Report tips</button><button data-ai="How do I choose the right severity?">Severity</button><button data-ai="What issues can I report?">What can I report?</button></div>
+  <form class="ai-input" id="aiForm"><input id="aiInput" autocomplete="off" placeholder="Ask a question…"><button type="submit">Send ↗</button></form>
+</div>
+{% endif %}
+<script src="{{ url_for('static',filename='js/app.js') }}"></script>
+{% if config.get('AI_ENABLED') %}<script src="{{ url_for('static',filename='js/ai-chat.js') }}"></script>{% endif %}
+<script src="{{ url_for('static',filename='js/reactbits-effects.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body></html>

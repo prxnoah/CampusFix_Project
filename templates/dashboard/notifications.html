@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block title %}Notifications | CampusFix{% endblock %}{% block content %}
+<section class="dashboard-head"><div class="container"><span class="eyebrow">UNIVERSITY PORTAL</span><h1>Notifications</h1><p>Updates about your CampusFix reports and university services.</p></div></section>
+<section class="section compact"><div class="container narrow">{% for n in items %}<article class="notification-card reveal"><div class="notification-icon">●</div><div><b>{{ n['title'] }}</b><p>{{ n['message'] }}</p><small>{{ (n['created_at'] or '')[:16] }}</small></div></article>{% else %}<div class="empty-state"><h2>You're all caught up.</h2><p>New CampusFix updates will appear here.</p></div>{% endfor %}</div></section>{% endblock %}

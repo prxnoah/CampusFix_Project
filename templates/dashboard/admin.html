@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}Administrator | CampusFix{% endblock %}
+{% block content %}
+<section class="dashboard-head"><div class="container"><div><span class="eyebrow">ADMINISTRATION</span><h1>Campus Maintenance Overview</h1><p>Monitor reports, workload, priorities, assignments and resolution performance in one view.</p></div></div></section>
+<section class="section compact"><div class="container">
+<div class="stat-grid admin-stat-grid">
+<div class="stat-card"><span>Total Reports</span><b data-count="{{ total }}">0</b><small>all time</small></div>
+<div class="stat-card"><span>Pending Review</span><b data-count="{{ pending }}">0</b><small>awaiting authorized review</small></div>
+<div class="stat-card alert-stat"><span>Urgent</span><b data-count="{{ urgent }}">0</b><small>high attention queue</small></div>
+<div class="stat-card"><span>Unassigned</span><b data-count="{{ unassigned }}">0</b><small>needs personnel</small></div>
+<div class="stat-card"><span>In Progress / Open</span><b data-count="{{ open_count }}">0</b><small>active maintenance concerns</small></div>
+<div class="stat-card"><span>Resolved</span><b data-count="{{ resolved }}">0</b><small>{{ rate }}% resolution rate</small></div>
+<div class="stat-card"><span>Overdue</span><b data-count="{{ overdue }}">0</b><small>open for more than 3 days</small></div>
+<div class="stat-card"><span>Avg. Resolution</span><b>{{ avg_hours }}h</b><small>based on resolved reports</small></div>
+</div>
+<div class="chart-grid"><div class="chart-card"><div class="chart-head"><div><span class="eyebrow">ISSUE MIX</span><h3>Reports by category</h3></div></div><canvas id="categoryChart"></canvas></div><div class="chart-card"><div class="chart-head"><div><span class="eyebrow">CAMPUS HEALTH</span><h3>Reports by building</h3></div></div><canvas id="buildingChart"></canvas></div></div>
+<div class="section-head dashboard-section-head"><div><span class="eyebrow">MANAGEMENT</span><h2>Recent reports</h2><p>Open any report to review its evidence, assignment, timeline and resolution record.</p></div><a class="btn btn-sm" href="{{ url_for('operations') }}">Open report management</a></div>
+<div class="table-card"><table><thead><tr><th>Report</th><th>Issue</th><th>Reporter</th><th>Priority</th><th>Status</th><th>Assigned</th><th></th></tr></thead><tbody>{% for r in recent %}<tr><td><b>{{ r['report_code'] }}</b><small>{{ r['created_at'][:16] }}</small></td><td>{{ r['category'] }}<small>{{ r['building'] }}</small></td><td>{{ r['reporter'] }}</td><td><span class="priority {{ r['priority']|lower }}">{{ r['priority'] }}</span></td><td><span class="status-pill">{{ r['status'] }}</span></td><td>{{ r['assignee'] or 'Unassigned' }}</td><td><a class="table-link" href="{{ url_for('report_detail',report_id=r['id']) }}">View →</a></td></tr>{% endfor %}</tbody></table></div>
+</div></section>
+{% endblock %}
+{% block scripts %}<script>
+const catLabels={{ by_cat|map(attribute='category')|list|tojson }},catData={{ by_cat|map(attribute='c')|list|tojson }};
+const bLabels={{ by_build|map(attribute='building')|list|tojson }},bData={{ by_build|map(attribute='c')|list|tojson }};
+new Chart(document.getElementById('categoryChart'),{type:'doughnut',data:{labels:catLabels,datasets:[{data:catData}]},options:{plugins:{legend:{position:'bottom'}},cutout:'68%'}});
+new Chart(document.getElementById('buildingChart'),{type:'bar',data:{labels:bLabels,datasets:[{label:'Reports',data:bData}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+</script>{% endblock %}

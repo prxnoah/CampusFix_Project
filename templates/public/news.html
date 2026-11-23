@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block title %}News & Announcements | LPU Manila{% endblock %}{% block content %}
+<section class="page-hero lpu-page-hero"><div class="container"><span class="eyebrow gold">LPU MANILA NEWS</span><h1>What's happening.</h1><p>University announcements, academic milestones, campus activities and CampusFix notices.</p></div></section>
+<section class="section"><div class="container news-list">{% for n in announcements %}<article class="news-row reveal"><div class="news-date"><b>{{ n['published_at'][:10] }}</b><span>{{ n['category'] }}</span></div><div><h2>{{ n['title'] }}</h2><p>{{ n['summary'] }}</p></div><span class="arrow">↗</span></article>{% endfor %}</div></section>{% endblock %}

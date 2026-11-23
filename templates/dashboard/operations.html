@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% block title %}Operations | CampusFix{% endblock %}
+{% block content %}
+<section class="dashboard-head"><div class="container"><div>
+<span class="eyebrow">FACILITIES OPERATIONS</span>
+<h1>{% if role=="maintenance" %}My Maintenance Work{% else %}Maintenance Command Center{% endif %}</h1>
+<p>{% if role=="maintenance" %}Review reports assigned to you, update your work, and provide resolution evidence.{% else %}Review incoming reports, verify submitted details, assign maintenance personnel, and track every issue through resolution.{% endif %}</p>
+</div></div></section>
+<section class="section compact"><div class="container">
+<div class="stat-grid">
+<div class="stat-card"><span>{% if role=="maintenance" %}My Open Work{% else %}Open Issues{% endif %}</span><b data-count="{{ counts.open }}">0</b><small>reported / under review / in progress</small></div>
+<div class="stat-card"><span>Awaiting Review</span><b data-count="{{ counts.review }}">0</b><small>new reports needing review</small></div>
+<div class="stat-card alert-stat"><span>Urgent</span><b data-count="{{ counts.urgent }}">0</b><small>needs priority attention</small></div>
+<div class="stat-card"><span>Unassigned</span><b data-count="{{ counts.unassigned }}">0</b><small>needs personnel</small></div>
+<div class="stat-card"><span>Resolved</span><b data-count="{{ counts.done }}">0</b><small>completed reports</small></div>
+</div>
+<div class="section-head dashboard-section-head"><div>
+<span class="eyebrow">WORK QUEUE</span><h2>{% if role=="maintenance" %}Your maintenance tasks{% else %}Report management{% endif %}</h2>
+<p>{% if role=="maintenance" %}Assigned reports appear here. New unassigned reports awaiting review are also visible so the team can coordinate the next action.{% else %}Every submitted report can be reviewed here. Use filters to find urgent, unassigned, or active concerns quickly.{% endif %}</p>
+</div></div>
+<form class="queue-filters" method="get">
+<label>Search<input name="q" value="{{ query }}" placeholder="Report ID, issue, building…"></label>
+<label>Status<select name="status"><option value="">All statuses</option>{% for s in statuses %}<option value="{{ s }}" {% if status_filter==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+<label>Priority<select name="priority"><option value="">All priorities</option>{% for p in ['Urgent','High','Medium','Low'] %}<option value="{{ p }}" {% if priority_filter==p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></label>
+<button class="btn btn-sm" type="submit">Filter</button><a class="text-link" href="{{ url_for('operations') }}">Clear</a>
+</form>
+<div class="table-card"><table><thead><tr><th>Report</th><th>Issue</th><th>Location</th><th>Reporter</th><th>Severity</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody>
+{% for r in reports %}<tr>
+<td><a class="table-link" href="{{ url_for('report_detail',report_id=r['id']) }}">{{ r['report_code'] }}</a><small>{{ r['created_at'][:16] }}</small></td>
+<td><b>{{ r['category'] }}</b><small>{{ r['description'][:55] }}{% if r['description']|length>55 %}…{% endif %}</small></td>
+<td>{{ r['building'] }}<small>{{ r['room_area'] or 'General area' }}</small></td>
+<td>{{ r['reporter'] }}</td><td><span class="status-pill">{{ r['severity'] }}</span></td>
+<td><span class="priority {{ r['priority']|lower }}">{{ r['priority'] }}</span></td>
+<td><span class="status-pill">{{ r['status'] }}</span><small>{% if r['assignee'] %}{{ r['assignee'] }}{% else %}Unassigned{% endif %}</small></td>
+<td><a class="btn btn-sm {% if r['status']=='Reported' %}btn-red{% endif %}" href="{{ url_for('report_detail',report_id=r['id']) }}">{% if r['status']=='Reported' %}Review Report{% elif role=='maintenance' and r['assigned_to']==current_user['id'] %}Update Work{% else %}View / Update{% endif %} →</a></td>
+</tr>
+{% else %}<tr><td colspan="8"><div class="empty-state"><h3>{% if role=="maintenance" %}No maintenance tasks right now{% else %}Queue is clear{% endif %}</h3><p>New CampusFix reports and assigned work will appear here automatically.</p></div></td></tr>{% endfor %}
+</tbody></table></div>
+</div></section>
+{% endblock %}
